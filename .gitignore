@@ -1,0 +1,14 @@
+# Project exclude paths
+/.gradle/
+/Seam Carving/Create an image/
+/Seam Carving/Find the seam/
+/Seam Carving/Horizontal seam/
+/Seam Carving/Look at energy/
+/Seam Carving/Negative photo/
+/Seam Carving/Resize/
+/Seam Carving/task/build/
+/Seam Carving/task/out/
+/Seam Carving/task/test/
+/.idea/
+*.yaml
+*gradle*
