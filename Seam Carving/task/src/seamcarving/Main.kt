@@ -6,19 +6,15 @@ import java.io.File
 import javax.imageio.ImageIO
 
 fun main(args: Array<String>) {
-    print("Enter rectangle width: ")
-    val width = readln().toInt()
-    print("Enter rectangle height: ")
-    val height = readln().toInt()
-    print("Enter output image name: ")
-    val name = readln()
+    val inName = args[1]
+    val outName = args[3]
 
-    val image = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
-    val graphics = image.createGraphics()
-    with(graphics) {
-        color = Color.RED
-        drawLine(0, 0, width - 1, height - 1)
-        drawLine(0, height - 1, width - 1, 0)
-    }
-    ImageIO.write(image, "png", File(name))
+    val image = ImageIO.read(File(inName))
+    for (x in 0 until image.width)
+        for (y in 0 until image.height) {
+            val color = Color(image.getRGB(x, y))
+            val newRGB = Color(255 - color.red, 255 - color.green, 255 - color.blue, ).rgb
+            image.setRGB(x, y, newRGB)
+        }
+    ImageIO.write(image, "png", File(outName))
 }
