@@ -38,6 +38,24 @@ fun main(args: Array<String>) {
             val newRGB = Color(intensity, intensity, intensity).rgb
             image.setRGB(x, y, newRGB)
         }
+
+    // *** Part Two ***
+    val minEnergySum: Array<Array<Double>> = Array(image.width ) { Array(image.height) { 0.0 } }
+
+    for (x in 0 until image.width)
+        for (y in 0 until image.height)
+            minEnergySum[x][y] = energy[x][y] +
+                    if (y > 0)
+                        minOf(
+                            minEnergySum[x][y - 1],
+                            if (x > 0) minEnergySum[x - 1][y - 1] else 0.0,
+                            if (x < image.width - 1) minEnergySum[x + 1][y - 1] else 0.0
+                        )
+                    else 0.0
+    val minIndexAtBottom = minEnergySum.indices.minByOrNull { minEnergySum[it][image.height - 1] }
+    println(minIndexAtBottom)
+
+
     ImageIO.write(image, "png", File(outName))
 }
 
