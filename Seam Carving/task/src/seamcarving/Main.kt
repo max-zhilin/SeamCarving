@@ -10,22 +10,34 @@ import kotlin.math.sqrt
 fun main(args: Array<String>) {
     val inName = args[1]
     val outName = args[3]
-    val horizontal = true
-    val image = ImageIO.read(File(inName))
-    val (lastX, lastY) = if (horizontal) Pair(image.height - 1, image.width - 1)
-                                    else Pair(image.width - 1, image.height - 1)
+    val reduceWidthBy = args[5].toInt()
+    val reduceHeightBy = args[7].toInt()
 
-    val minEnergySum: Array<Array<Double>> = if (horizontal) Array(image.height) { Array(image.width) { 0.0 } }
-                                                        else Array(image.width) { Array(image.height) { 0.0 } }
+    val image = ImageIO.read(File(inName))
+
+    var width = image.width
+    var height = image.height
+
+    repeat (reduceWidthBy) { removeSeam(image, width--, height, transpose = false) }
+    repeat (reduceHeightBy) { removeSeam(image, height--, width, transpose = true) }
+
+    ImageIO.write(image.getSubimage(0, 0, width, height), "png", File(outName))
+}
+
+fun removeSeam(image: BufferedImage, width: Int, height: Int, transpose: Boolean) {
+    val lastX = width - 1
+    val lastY = height - 1
+    val minEnergySum: Array<Array<Double>> = Array(width) { Array(height) { 0.0 } }
+
     for (y in 0..lastY) // Row by row fill top down
         for (x in 0..lastX) {
             val xd = x.coerceIn(1 until lastX) // Shift by 1 near the borders
             val yd = y.coerceIn(1 until lastY)
 
-            val colorX1 = Color(image.getRGBTransposed(xd - 1, y, horizontal))
-            val colorX2 = Color(image.getRGBTransposed(xd + 1, y, horizontal))
-            val colorY1 = Color(image.getRGBTransposed(x, yd - 1, horizontal))
-            val colorY2 = Color(image.getRGBTransposed(x, yd + 1, horizontal))
+            val colorX1 = Color(image.getRGBTransposed(xd - 1, y, transpose))
+            val colorX2 = Color(image.getRGBTransposed(xd + 1, y, transpose))
+            val colorY1 = Color(image.getRGBTransposed(x, yd - 1, transpose))
+            val colorY2 = Color(image.getRGBTransposed(x, yd + 1, transpose))
 
             // Don't need to store energy due to one pass
             val energyXY = sqrt(deltaSquare(colorX1, colorX2) + deltaSquare(colorY1, colorY2))
@@ -39,23 +51,21 @@ fun main(args: Array<String>) {
                             else -> x - 1..x + 1
                         }
                         indices.minOf { minEnergySum[it][y - 1] }
-                    } else 0.0 // For first line it's just energy
+                    } else 0.0 // For the first line it's just energy
         }
 
     // Take min sum on the bottom line and reconstruct the shortest path line by line bottom up
     var x = minEnergySum.indices.minByOrNull { minEnergySum[it][lastY] }!!
-    image.setRGBTransposed(x, lastY, Color.RED.rgb, horizontal)
+    image.cutPixelTransposed(x, lastY, transpose)
     for (y in lastY - 1 downTo 0) {
         val indices = when (x) {
             0 -> 0..1
             lastX -> x - 1..x
             else -> x - 1..x + 1
         }
-        x = indices.minByOrNull { minEnergySum[it][y] }!! // X where min sum in 3 (or 2) pixels on the prev line
-        image.setRGBTransposed(x, y, Color.RED.rgb, horizontal)
+        x = indices.minByOrNull { minEnergySum[it][y] }!! // X is the min sum in 3 (or 2) pixels on the prev line
+        image.cutPixelTransposed(x, y, transpose)
     }
-
-    ImageIO.write(image, "png", File(outName))
 }
 
 fun deltaSquare(a: Color, b: Color): Double {
@@ -64,16 +74,18 @@ fun deltaSquare(a: Color, b: Color): Double {
             (a.blue - b.blue).toDouble().pow(2.0)
 }
 
-fun BufferedImage.getRGBTransposed(x: Int, y: Int, transposed: Boolean): Int {
-    return if (transposed)
+fun BufferedImage.getRGBTransposed(x: Int, y: Int, transpose: Boolean): Int {
+    return if (transpose)
         getRGB(y, x)
     else
         getRGB(x, y)
 }
 
-fun BufferedImage.setRGBTransposed(x: Int, y: Int, rgb: Int, transposed: Boolean) {
-    if (transposed)
-        setRGB(y, x, rgb)
+fun BufferedImage.cutPixelTransposed(x: Int, y: Int, transpose: Boolean) {
+    if (transpose)
+        for (i in x until height - 1)
+            setRGB(y, i, getRGB(y, i + 1))
     else
-        setRGB(x, y, rgb)
+        for (i in x until width - 1)
+            setRGB(i, y, getRGB(i + 1, y))
 }
